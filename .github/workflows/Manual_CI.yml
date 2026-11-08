@@ -28,44 +28,60 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Pause — review checkout
+      - name: Pause - review checkout
         env:
           DEMO_PAUSE_SECONDS: ${{ inputs.pause_seconds }}
         run: |
-          echo "Checkout complete. Pausing for ${DEMO_PAUSE_SECONDS} seconds..."
-          sleep "$DEMO_PAUSE_SECONDS"
+          echo "Checkout complete. Pausing so the class can review it..."
+          for ((i=${DEMO_PAUSE_SECONDS}; i>0; i--)); do
+            echo "Checkout pause: $i second(s) remaining..."
+            sleep 1
+          done
+          echo "Continuing to the next step."
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
 
-      - name: Pause — review Node.js setup
+      - name: Pause - review Node.js setup
         env:
           DEMO_PAUSE_SECONDS: ${{ inputs.pause_seconds }}
         run: |
-          echo "Node.js is ready. Pausing for ${DEMO_PAUSE_SECONDS} seconds..."
-          sleep "$DEMO_PAUSE_SECONDS"
+          echo "Node.js setup complete. Pausing so the class can review it..."
+          for ((i=${DEMO_PAUSE_SECONDS}; i>0; i--)); do
+            echo "Node.js pause: $i second(s) remaining..."
+            sleep 1
+          done
+          echo "Continuing to the next step."
 
       - name: Install dependencies
         run: npm install
 
-      - name: Pause — review dependency installation
+      - name: Pause - review dependency installation
         env:
           DEMO_PAUSE_SECONDS: ${{ inputs.pause_seconds }}
         run: |
-          echo "Dependencies installed. Pausing for ${DEMO_PAUSE_SECONDS} seconds..."
-          sleep "$DEMO_PAUSE_SECONDS"
+          echo "Dependencies installed. Pausing so the class can review it..."
+          for ((i=${DEMO_PAUSE_SECONDS}; i>0; i--)); do
+            echo "Install pause: $i second(s) remaining..."
+            sleep 1
+          done
+          echo "Continuing to the next step."
 
       - name: Lint
         run: npm run lint
 
-      - name: Pause — review lint result
+      - name: Pause - review lint result
         env:
           DEMO_PAUSE_SECONDS: ${{ inputs.pause_seconds }}
         run: |
-          echo "Lint finished. Pausing for ${DEMO_PAUSE_SECONDS} seconds..."
-          sleep "$DEMO_PAUSE_SECONDS"
+          echo "Lint finished. Pausing so the class can review the result..."
+          for ((i=${DEMO_PAUSE_SECONDS}; i>0; i--)); do
+            echo "Lint pause: $i second(s) remaining..."
+            sleep 1
+          done
+          echo "Continuing to the next step."
 
       - name: Test
         run: npm test
