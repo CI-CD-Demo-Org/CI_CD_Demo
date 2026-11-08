@@ -2,23 +2,20 @@ name: CI/CD Pipeline with Manual & Event Triggers
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
     inputs:
       pause_seconds:
         description: "Pause between stages for class demonstration"
         type: choice
-        options:
-          - "5"
-          - "10"
-          - "15"
+        options: ["5", "10", "15"]
         default: "10"
         required: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   checkout-code:
@@ -32,7 +29,7 @@ jobs:
         env:
           PAUSE: ${{ inputs.pause_seconds }}
         run: |
-          for ((i=${PAUSE}; i>0; i--)); do
+          for ((i=PAUSE; i>0; i--)); do
             echo "Checkout pause: $i second(s) remaining..."
             sleep 1
           done
@@ -53,7 +50,7 @@ jobs:
         env:
           PAUSE: ${{ inputs.pause_seconds }}
         run: |
-          for ((i=${PAUSE}; i>0; i--)); do
+          for ((i=PAUSE; i>0; i--)); do
             echo "Node.js pause: $i second(s) remaining..."
             sleep 1
           done
@@ -76,7 +73,7 @@ jobs:
         env:
           PAUSE: ${{ inputs.pause_seconds }}
         run: |
-          for ((i=${PAUSE}; i>0; i--)); do
+          for ((i=PAUSE; i>0; i--)); do
             echo "Install pause: $i second(s) remaining..."
             sleep 1
           done
@@ -101,7 +98,7 @@ jobs:
         env:
           PAUSE: ${{ inputs.pause_seconds }}
         run: |
-          for ((i=${PAUSE}; i>0; i--)); do
+          for ((i=PAUSE; i>0; i--)); do
             echo "Linter pause: $i second(s) remaining..."
             sleep 1
           done
@@ -126,55 +123,7 @@ jobs:
         env:
           PAUSE: ${{ inputs.pause_seconds }}
         run: |
-          for ((i=${PAUSE}; i>0; i--)); do
+          for ((i=PAUSE; i>0; i--)); do
             echo "Test pause: $i second(s) remaining..."
             sleep 1
           done
-
-  antigravity-audit:
-    name: 6. Antigravity Code Audit
-    needs: run-tests
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    env:
-      ANTIGRAVITY_TOKEN: ${{ secrets.ANTIGRAVITY_TOKEN }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.pull_request.head.ref || github.ref }}
-      - name: Install Antigravity CLI
-        if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
-        run: |
-          curl -fsSL https://antigravity.google/cli/install.sh | bash
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Configure Credentials
-        if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
-        run: |
-          mkdir -p $HOME/.gemini/antigravity-cli
-          printf '{"token":{"access_token":"","token_type":"Bearer","refresh_token":"%s","expiry":"0001-01-01T00:00:00Z"},"auth_method":"consumer"}\n' "$ANTIGRAVITY_TOKEN" > $HOME/.gemini/antigravity-cli/antigravity-oauth-token
-          chmod 600 $HOME/.gemini/antigravity-cli/antigravity-oauth-token
-      - name: Run Automated Audit
-        if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
-        run: |
-          echo "### Antigravity AI Code Audit Report" > audit_report.md
-          echo "Generated on: $(date)" >> audit_report.md
-          echo "" >> audit_report.md
-          agy --print "Perform a code quality, architecture, and structure review on the repository. Highlight code cleanliness, test coverage, and adherence to AGENTS.md instructions. Format the output in Markdown." --dangerously-skip-permissions >> audit_report.md
-      - name: Commit and Push Audit Report
-        if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
-        env:
-          TARGET_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add audit_report.md
-          git diff-index --quiet HEAD || git commit -m "docs: update Antigravity AI Code Audit Report [skip ci]"
-          git push origin HEAD:refs/heads/"$TARGET_REF"
-      - name: Upload Audit Report
-        if: ${{ env.ANTIGRAVITY_TOKEN != '' }}
-        uses: actions/upload-artifact@v7
-        with:
-          path: audit_report.md
-          archive: false
