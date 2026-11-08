@@ -17,17 +17,14 @@ permissions:
   contents: read
 
 jobs:
-  build-test-lint:
-    name: Install, lint, and test
+  checkout-code:
+    name: 1. Checkout Code
     runs-on: ubuntu-latest
-
     steps:
       - name: Show demo start
         run: echo "Starting the manual CI demo."
-
       - name: Check out repository
         uses: actions/checkout@v4
-
       - name: Pause - review checkout
         env:
           DEMO_PAUSE_SECONDS: ${{ inputs.pause_seconds }}
@@ -39,11 +36,17 @@ jobs:
           done
           echo "Continuing to the next step."
 
+  setup-node:
+    name: 2. Setup Node.js
+    needs: checkout-code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
-
       - name: Pause - review Node.js setup
         env:
           DEMO_PAUSE_SECONDS: ${{ inputs.pause_seconds }}
@@ -55,9 +58,19 @@ jobs:
           done
           echo "Continuing to the next step."
 
+  install-deps:
+    name: 3. Install Dependencies
+    needs: setup-node
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
       - name: Install dependencies
         run: npm install
-
       - name: Pause - review dependency installation
         env:
           DEMO_PAUSE_SECONDS: ${{ inputs.pause_seconds }}
@@ -69,9 +82,21 @@ jobs:
           done
           echo "Continuing to the next step."
 
+  lint-code:
+    name: 4. Lint Code
+    needs: install-deps
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
       - name: Lint
         run: npm run lint
-
       - name: Pause - review lint result
         env:
           DEMO_PAUSE_SECONDS: ${{ inputs.pause_seconds }}
@@ -83,8 +108,20 @@ jobs:
           done
           echo "Continuing to the next step."
 
+  test-code:
+    name: 5. Run Tests & Complete
+    needs: lint-code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
       - name: Test
         run: npm test
-
       - name: Show demo complete
         run: echo "The CI demo completed successfully."
