@@ -1,68 +1,74 @@
 ### Antigravity AI Code Audit Report
-Generated on: Sun Nov  8 04:04:39 UTC 2026
+Generated on: Sun Nov  8 04:40:42 UTC 2026
 
-# Repository Code Quality, Architecture, and Structure Review
+# Code Quality, Architecture, and Structure Review
 
 ## 1. Executive Summary
-The `CI_CD_Demo` repository is a clean, lightweight Node.js and static web project demonstrating an end-to-end Continuous Integration and Continuous Delivery (CI/CD) workflow with automated AI auditing. It passes all 8 unit tests and syntax checks with zero external dependencies, adhering strictly to the guidelines in [AGENTS.md](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/AGENTS.md). A few minor architectural and build-packaging improvements are noted below to ensure the deployed web application properly bundles the core math library.
+
+`CI_CD_Demo` is a clean, zero-dependency JavaScript project that pairs a core arithmetic library ([`src/math.js`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js)) with a static web calculator ([`public/`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public)) and automated GitHub Actions CI/CD pipelines. Both `npm test` (8/8 passing) and `npm run lint` succeed with zero warnings or errors.
 
 ---
 
 ## 2. Architecture & Repository Structure
 
-### Directory Layout
-- **Core Logic ([src/math.js](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js))**: Implements core arithmetic functions ([`add`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L20-L23), [`subtract`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L31-L34), [`multiply`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L42-L45), [`divide`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L54-L60), [`power`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L68-L71)) and input validation ([`assertNumeric`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L6-L12)).
-- **Unit Tests ([test/math.test.js](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/test/math.test.js))**: Uses the native `node:test` and `node:assert` modules.
-- **Web Frontend ([public/index.html](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public/index.html), [public/app.js](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public/app.js), [public/style.css](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public/style.css))**: Provides an interactive calculator UI deployed to GitHub Pages.
-- **CI/CD Workflows ([.github/workflows/ci.yml](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/.github/workflows/ci.yml), [.github/workflows/cd.yml](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/.github/workflows/cd.yml), [.github/workflows/Manual_CI.yml](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/.github/workflows/Manual_CI.yml))**: Separates CI verification and AI auditing from CD deployment.
+```
+CI_CD_Demo/
+├── .github/workflows/   # CI and CD GitHub Actions pipelines
+├── public/              # Static web calculator frontend (HTML, CSS, JS)
+├── src/                 # Core business logic (math.js)
+├── test/                # Node.js native test runner suite (math.test.js)
+├── AGENTS.md            # Agent instructions & repository standards
+└── package.json         # Scripts and project metadata
+```
 
-### Key Architectural Findings
-1. **Dual-Environment Module Pattern**:
-   [src/math.js](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L83-L91) exports [`MathLib`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L74) via `module.exports` for Node.js and attaches `window.MathLib` for browser environments.
-2. **Missing `math.js` Copy Step in CD Pipeline (Bug / Gap)**:
-   - [public/index.html](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public/index.html#L89) loads `<script src="math.js"></script>`, expecting `math.js` to be inside `public/`.
-   - However, `src/math.js` is not copied into `public/` during [.github/workflows/cd.yml](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/.github/workflows/cd.yml#L26-L34) before `public/` is uploaded as the GitHub Pages artifact.
-   - Because [public/app.js](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public/app.js#L31-L49) includes inline fallback arithmetic (`math.add ? math.add(a, b) : a + b`), the UI still functions on basic inputs, but silently bypasses [src/math.js](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js) (including its `-0` division check) when `math.js` 404s.
-3. **Root-Level Documentation Clutter**:
-   Planning documents ([cd_implementation_plan.md](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/cd_implementation_plan.md), [ci_cd_configuration_guide.md](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/ci_cd_configuration_guide.md), [ci_cd_project_tasks.md](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/ci_cd_project_tasks.md)) sit at the repository root and could be organized into a `docs/` directory.
+### Strengths
+- **Separation of Concerns**: Core math operations in [`src/math.js`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js) are cleanly decoupled from DOM manipulation in [`public/app.js`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public/app.js) and unit tests in [`test/math.test.js`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/test/math.test.js).
+- **Universal Module Pattern**: [`src/math.js`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L83-L91) uses an environment check (`module.exports` for Node.js CommonJS and `window.MathLib` for browser globals) so the same file can run in both Node.js and the browser without a bundler.
+
+### Architectural Findings & Risks
+1. **Missing `math.js` in `public/` During CD Packaging**:
+   - [`public/index.html`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public/index.html#L89) loads `<script src="math.js"></script>`, expecting `math.js` to exist inside `public/`.
+   - However, [`.github/workflows/cd.yml`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/.github/workflows/cd.yml#L30-L33) uploads the `public/` directory directly to GitHub Pages without copying [`src/math.js`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js) into `public/math.js`.
+   - As a result, `window.MathLib` is `undefined` in production, causing [`public/app.js`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public/app.js#L31-L49) to silently fall back to its inline arithmetic expressions rather than executing [`src/math.js`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js).
+   - **Recommendation**: Add a build/copy step (`cp src/math.js public/math.js`) in [`.github/workflows/cd.yml`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/.github/workflows/cd.yml) (and `.gitignore` `public/math.js` or add an npm `build` script).
+2. **Duplicate Fallback Logic in Frontend**:
+   - [`public/app.js`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public/app.js#L31-L49) duplicates arithmetic logic as a fallback when `window.MathLib` is missing (including returning `'Error'` on division by zero instead of throwing like [`divide`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L54-L60)). Removing the fallback once `math.js` is properly bundled into `public/` will ensure the UI strictly tests and relies on [`MathLib`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L74).
 
 ---
 
-## 3. Code Cleanliness
+## 3. Code Quality & Cleanliness
 
-- **Documentation & Readability**: All functions in [src/math.js](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js) include thorough JSDoc comments specifying parameter types, return values, and thrown errors.
-- **Defensive Input Validation**: [`assertNumeric`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L6-L12) rejects non-number types and `NaN`, and [`divide`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L54-L60) explicitly handles both `0` and `-0` via `Object.is(b, -0)`.
-- **Linting Coverage**: In [package.json](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/package.json#L8), `npm run lint` runs `node --check src/*.js test/*.js`, which omits [public/app.js](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public/app.js). Expanding this script to `node --check src/*.js test/*.js public/*.js` will ensure frontend scripts are syntax-checked in CI.
+### [`src/math.js`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js)
+- **Readability & Documentation**: Every function ([`assertNumeric`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L6-L12), [`add`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L20-L23), [`subtract`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L31-L34), [`multiply`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L42-L45), [`divide`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L54-L60), [`power`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L68-L71)) is concise and documented with complete JSDoc annotations (`@param`, `@returns`, `@throws`).
+- **Defensive Input Validation**: [`assertNumeric`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L6-L12) centralizes validation across all operations, rejecting non-numbers and `NaN` with a descriptive `TypeError`.
+- **Minor Redundancy**: In [`divide`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L56), `if (b === 0 || Object.is(b, -0))` is slightly redundant because `-0 === 0` already evaluates to `true` in JavaScript.
+
+### [`public/app.js`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public/app.js), [`public/index.html`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public/index.html), & [`public/style.css`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public/style.css)
+- **Clean DOM & Styling**: Semantic HTML5 structure, CSS custom properties (`:root` variables) in [`public/style.css`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public/style.css#L1-L13), and clear event listener registration in [`public/app.js`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public/app.js#L5-L61).
+- **Lint Scope Gap**: [`package.json`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/package.json#L8) defines `"lint": "node --check src/*.js test/*.js"`, which omits `public/*.js`. Extending this script to `"node --check src/*.js test/*.js public/*.js"` will ensure frontend JavaScript syntax is also verified in CI.
 
 ---
 
 ## 4. Test Coverage
 
-- **Execution Status**: `8 / 8` unit tests in [test/math.test.js](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/test/math.test.js) pass (`~52ms` execution time).
-- **Covered Scenarios**:
-  - Standard operations for [`add`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L20-L23), [`subtract`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L31-L34), [`multiply`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L42-L45), [`divide`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L54-L60), and [`power`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L68-L71) (including zero and negative exponents).
-  - Edge cases: division by `0` and `-0`, and `TypeError` validation for strings, `null`, `undefined`, and `NaN`.
-- **Coverage Opportunities**:
-  - Add boundary tests for `Infinity` / `-Infinity` and floating-point precision (e.g., `add(0.1, 0.2)`).
-  - Test the browser global export branch (`window.MathLib`) in Node by mocking `globalThis.window`.
+[`test/math.test.js`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/test/math.test.js) executes **8 unit tests** using Node's native `node:test` and `node:assert` modules:
+- Happy-path coverage for [`add`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L20-L23), [`subtract`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L31-L34), [`multiply`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L42-L45), [`divide`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L54-L60), and [`power`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L68-L71) (including zero and negative exponents).
+- Error-handling coverage for division by `0` and `-0`.
+- `TypeError` validation across all 5 functions for invalid argument types (`string`, `null`, `undefined`, `NaN`).
+
+### Coverage Opportunities
+- **Edge-case numerics**: Tests for floating-point precision (e.g., `add(0.1, 0.2)`), `Infinity` / `-Infinity` handling in [`assertNumeric`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js#L6-L12) (or fractional powers of negative bases like `power(-1, 0.5)` which returns `NaN`).
+- **Frontend UI logic**: [`public/app.js`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public/app.js) currently has no automated unit or integration test coverage.
 
 ---
 
-## 5. Adherence to `AGENTS.md` Instructions
+## 5. Adherence to [`AGENTS.md`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/AGENTS.md)
 
-| Requirement in [AGENTS.md](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/AGENTS.md) | Status | Assessment |
-| :--- | :--- | :--- |
-| **Run Tests (`npm test`)** | Compliant | Passes all 8 tests cleanly. |
-| **Run Linting (`npm run lint`)** | Compliant | Passes syntax validation with zero errors. |
-| **Zero Breakages** | Compliant | All existing unit tests pass without regression. |
-| **Simple, Modular, Documented Code** | Compliant | Modular functions with complete JSDoc annotations. |
-| **Vanilla JS & Native Test Runner** | Compliant | Uses CommonJS + `node:test` and `node:assert`. |
-| **Zero Third-Party Dependencies** | Compliant | [package.json](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/package.json) has no `dependencies` or `devDependencies`. |
-
----
-
-## 6. Actionable Recommendations
-
-1. **Bundle `src/math.js` in the CD Workflow**: Add a step `cp src/math.js public/math.js` in [.github/workflows/cd.yml](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/.github/workflows/cd.yml) prior to `actions/upload-pages-artifact`, and remove the redundant fallback math operators in [public/app.js](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/public/app.js#L31-L49).
-2. **Include `public/*.js` in Lint Script**: Update the `lint` script in [package.json](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/package.json#L8) to `node --check src/*.js test/*.js public/*.js`.
-3. **Standardize GitHub Actions Versions**: Align checkout/artifact action versions across [.github/workflows/ci.yml](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/.github/workflows/ci.yml) and [.github/workflows/cd.yml](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/.github/workflows/cd.yml).
+| Requirement in `AGENTS.md` | Status | Notes |
+| :--- | :---: | :--- |
+| **Run Tests (`npm test`)** | ✅ Pass | All 8 unit tests in [`test/math.test.js`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/test/math.test.js) pass via `node --test`. |
+| **Run Linting (`npm run lint`)** | ✅ Pass | Syntax check (`node --check`) passes with zero errors. |
+| **Zero Breakages** | ✅ Pass | No broken tests or regressions in the repository. |
+| **Simple, Modular, Documented Code** | ✅ Pass | Functions in [`src/math.js`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/src/math.js) are small, single-purpose, and JSDoc-documented. |
+| **Vanilla JavaScript & Native Test Runner** | ✅ Pass | Uses CommonJS and `node:test` / `node:assert` without external test frameworks. |
+| **Zero Third-Party Dependencies** | ✅ Pass | [`package.json`](file:///home/runner/work/CI_CD_Demo/CI_CD_Demo/package.json) has no `dependencies` or `devDependencies`. |
