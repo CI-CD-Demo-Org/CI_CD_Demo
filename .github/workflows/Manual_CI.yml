@@ -1,0 +1,35 @@
+name: Manual CI Demo
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-lint:
+    name: Install, lint, and test
+    runs-on: ubuntu-latest
+
+    steps:
+      # Download the repository source code onto the runner.
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # Set up the Node.js version used by this project.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # Install the project's dependencies.
+      - name: Install dependencies
+        run: npm install
+
+      # Check JavaScript files for syntax errors.
+      - name: Lint
+        run: npm run lint
+
+      # Run the automated tests.
+      - name: Test
+        run: npm test
