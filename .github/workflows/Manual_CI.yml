@@ -2,6 +2,16 @@ name: Manual CI Demo
 
 on:
   workflow_dispatch:
+    inputs:
+      pause_seconds:
+        description: "Pause between steps so the class can follow along"
+        type: choice
+        options:
+          - "5"
+          - "10"
+          - "15"
+        default: "10"
+        required: true
 
 permissions:
   contents: read
@@ -12,24 +22,53 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Download the repository source code onto the runner.
+      - name: Show demo start
+        run: echo "Starting the manual CI demo."
+
       - name: Check out repository
         uses: actions/checkout@v4
 
-      # Set up the Node.js version used by this project.
+      - name: Pause — review checkout
+        env:
+          DEMO_PAUSE_SECONDS: ${{ inputs.pause_seconds }}
+        run: |
+          echo "Checkout complete. Pausing for ${DEMO_PAUSE_SECONDS} seconds..."
+          sleep "$DEMO_PAUSE_SECONDS"
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
 
-      # Install the project's dependencies.
+      - name: Pause — review Node.js setup
+        env:
+          DEMO_PAUSE_SECONDS: ${{ inputs.pause_seconds }}
+        run: |
+          echo "Node.js is ready. Pausing for ${DEMO_PAUSE_SECONDS} seconds..."
+          sleep "$DEMO_PAUSE_SECONDS"
+
       - name: Install dependencies
         run: npm install
 
-      # Check JavaScript files for syntax errors.
+      - name: Pause — review dependency installation
+        env:
+          DEMO_PAUSE_SECONDS: ${{ inputs.pause_seconds }}
+        run: |
+          echo "Dependencies installed. Pausing for ${DEMO_PAUSE_SECONDS} seconds..."
+          sleep "$DEMO_PAUSE_SECONDS"
+
       - name: Lint
         run: npm run lint
 
-      # Run the automated tests.
+      - name: Pause — review lint result
+        env:
+          DEMO_PAUSE_SECONDS: ${{ inputs.pause_seconds }}
+        run: |
+          echo "Lint finished. Pausing for ${DEMO_PAUSE_SECONDS} seconds..."
+          sleep "$DEMO_PAUSE_SECONDS"
+
       - name: Test
         run: npm test
+
+      - name: Show demo complete
+        run: echo "The CI demo completed successfully."
