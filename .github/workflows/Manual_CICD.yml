@@ -1,4 +1,4 @@
-name: CI/CD Pipeline with Manual & Event Triggers
+name: Manual CI/CD Pipeline with Event Triggers
 
 on:
   push:
