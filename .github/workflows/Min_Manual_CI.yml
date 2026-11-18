@@ -1,0 +1,17 @@
+# Workflow name (shown in GitHub Actions UI)
+name: Min_Manual_CI
+
+# Trigger: allow manual execution from the GitHub Actions tab
+on: workflow_dispatch
+
+# Define jobs (a workflow has one or more jobs)
+jobs:
+  # Job name (can be any identifier)
+  build:
+    # Runner: the virtual machine environment
+    runs-on: ubuntu-latest
+    # Steps: sequence of tasks executed in this job
+    steps:
+      # Execute a shell command
+      - run: echo "Hello CI"
+
